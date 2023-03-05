@@ -3,6 +3,7 @@
 from rest_framework import serializers
 from MainApi.models import Project, Image, Language, Contact, Service, Skill
 
+
 # Project image serializer...
 
 
@@ -21,21 +22,35 @@ class LanguageSerializer(serializers.HyperlinkedModelSerializer):
 
 # Project main serializer...
 
-
 class ProjectSerializer(serializers.HyperlinkedModelSerializer):
     language_and_tool_names = serializers.SerializerMethodField()
-    image_urls = serializers.SerializerMethodField()
+    images = serializers.SerializerMethodField()
 
     class Meta:
         model = Project
-        fields = ('id', 'title', 'describtion', 'image_urls',
+        fields = ('id', 'title', 'describtion', 'images',
                   'language_and_tool_names', 'workflow_link', 'project_link')
 
     def get_language_and_tool_names(self, obj):
         return [item.name for item in obj.languageAndTool.all()]
 
-    def get_image_urls(self, image):
-            return [str(item.name) for item in image.languageAndTool.all()]
+    def get_images(self, obj):
+        request = self.context.get('request')
+        image_urls = []
+
+        for image in obj.images.all():
+            if image.url:
+                # get the URL for the image based on the MEDIA_ROOT and MEDIA_URL settings
+                image_url = image.url.url
+
+                # if the request is available, prepend the domain and protocol to the URL
+                if request is not None:
+                    image_url = request.build_absolute_uri(image_url)
+
+                image_urls.append(image_url)
+
+        return image_urls
+
 
 # contact serializer
 
